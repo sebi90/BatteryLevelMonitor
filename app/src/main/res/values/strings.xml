@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">BatteryLevelMonitor</string>
+
+    <string name="anzeige">Ladegerät angeschlossen?</string>
+    <string name="action_settings">Settings</string>
+    <string name="lowBatteryMessage">Low Battery!!!</string>
+    <string name="changedBatteryMessage">Battery status changed!!!</string>
+</resources>
