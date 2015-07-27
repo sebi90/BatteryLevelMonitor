@@ -12,13 +12,21 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 
-    private BroadcastReceiver batChReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver batteryChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             MainActivity.this.onBatteryChangeBroadcastReceived(intent);
+
+            /*
+            final String message = context.getString(R.string.lowBatteryMessage);
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+            //ADB Befehl:
+            //./adb shell am broadcast -a android.intent.action.BATTERY_LOW
+            */
         }
     };
 
@@ -28,11 +36,22 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         //final IntentFilter batChFilter = new IntentFilter(Intent.ACTION_BATTERY_LOW);
-        //final LowBatteryReceiver batChReceiver = new LowBatteryReceiver();
-
         final IntentFilter batChFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 
-        this.registerReceiver(batChReceiver, batChFilter);
+        this.registerReceiver(batteryChangeReceiver, batChFilter);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        //final IntentFilter battChangeFilter = new IntentFilter(Intent.ACTION_BATTERY_LOW);
+
+        final IntentFilter battChangeFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        final Intent currBattChangeIntent = this.registerReceiver(this.batteryChangeReceiver, battChangeFilter);
+        this.onBatteryChangeBroadcastReceived(currBattChangeIntent);
+    }
+    @Override protected void onPause() {
+        super.onPause();
+        this.unregisterReceiver(this.batteryChangeReceiver);
     }
 
     //Kein Ladegerät
@@ -48,7 +67,7 @@ public class MainActivity extends Activity {
         int newBackgroundColor;
         final View topLevelContainer = this.findViewById(R.id.topLevelContainer);
 
-        switch (batteryChangedIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0))
+        /*switch (batteryChangedIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0))
         {
             case 1:
                 textView.setText("AC-Ladegerät angeschlossen");
@@ -65,22 +84,24 @@ public class MainActivity extends Activity {
                 newBackgroundColor = Color.rgb(255,0, 0);
                 break;
         }
+        */
+
+
+        //./adb shell am broadcast -a android.intent.action.BATTERY_CHANGED --ei level 30
+        final int currLevel = batteryChangedIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        final int maxLevel = batteryChangedIntent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        final int percentage = (int) Math.round(-currLevel / maxLevel);
+        textView.setText(String.valueOf(percentage));
+
+        final int greenRatio = (255 * percentage) / 100;
+        final int redRatio = (255 * (100 - percentage)) / 100;
+        newBackgroundColor = Color.rgb(redRatio, greenRatio, 0);
 
         topLevelContainer.setBackgroundColor(newBackgroundColor);
-
     }
 
 
-    @Override protected void onResume() {
-        super.onResume();
-        final IntentFilter batChFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        final Intent currBattChangeIntent = this.registerReceiver(this.batChReceiver, batChFilter);
-        this.onBatteryChangeBroadcastReceived(currBattChangeIntent);
-    }
-    @Override protected void onPause() {
-        super.onPause();
-        this.unregisterReceiver(this.batChReceiver);
-    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
